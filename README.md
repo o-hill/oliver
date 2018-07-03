@@ -13,7 +13,7 @@ on previous actions.  This problem setup is modeled on a statistical construct k
 ### Goal
 ---
 
-For my problem, I began thinking I would have the agents learn to cluster themselves by rewarding them based on their proximity to other agents.  If you keep reading you'll figure out that this didn't work as I wanted, so there is now a single learning agent that attempts to cluster all the circles around a point on the screen (300, 300).
+For my problem, I began thinking I would have the agents learn to cluster themselves by rewarding them based on their proximity to other agents.  If you keep reading you'll figure out that this didn't work as I wanted, so there is now a single learning agent that attempts to cluster all the circles around a randomly chosen point on the screen, resetting itself every time the page loads.
 
 ---
 
@@ -31,7 +31,7 @@ Q-Learning revolves around finding the 'quality' of an action at each state. Ide
 The Q-Learning update looks like this:
 ![Image](https://cdn-images-1.medium.com/max/1600/0*q8Dnp4guvDD230if.)
 
-Where _s$_t$_ is the state, and _a$_t$_ is the action at any time step _t_.
+Where _s_ is the state, and _a_ is the action at any time step _t_.
 
 So essentially the computer is learning to maximize the quality of each action it takes, and that quality is dependent on the last value of quality we had for this action, the reward we get for this action, and the expected quality in the next state.
 

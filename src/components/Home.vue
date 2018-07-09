@@ -1,6 +1,6 @@
 <template>
   <v-layout>
-    <svg id='overlay' height='100vw' width='100vw'>
+    <svg id='overlay' height='100vh' width='100vw'>
       <rect x=300 y=300 height=10 width=10 fill='#ff0000'></rect>
       <rect width='100%' fill='#273239'></rect>
     </svg>
@@ -54,6 +54,9 @@
         stateSpace: 4 * this.numAgents,
         maxHeight: window.innerHeight,
         maxWidth: window.innerWidth,
+        aggregateReward: [ ],
+        x: 0,
+        y: 0,
 
         // How far an agent can move in a single D3 transition.
         transitionSpeed: 300,
@@ -68,6 +71,11 @@
 
     methods: {
 
+      leaving() {
+        console.log(JSON.stringify(this.aggregateReward));
+        alert('Get the reward dump!');
+        return 'Get the reward dump!';
+      },
 
       initializeAgents() {
 
@@ -90,10 +98,10 @@
 
         var gaussianRandom = () => {
           let sample = 0.0;
-          for (var i = 0; i < 10; ++i) 
+          for (var i = 0; i < 6; ++i) 
             sample += Math.random()
 
-          return sample / 10;
+          return sample / 6;
         }
 
         var draw = function(selection) {
@@ -109,6 +117,8 @@
 
         circle.enter().append('circle')
           .attr('r', 0)
+          .attr('cx', function(d) { return d.x; })
+          .attr('cy', function(d) { return d.y; })
           .attr('fill', '#ffffff')
           .transition().duration(that.transitionSpeed).call(draw)
 
@@ -121,9 +131,11 @@
         let spec = {
           alpha: 0.001, // Learning rate.
           gamma: 0, // Maximally greedy policy.
+          num_hidden_units: 128, // Size of the networks hidden layer.
+          nIter: 0,
 
           // Start at 0.30 and slowly decay to around 0.05.
-          epsilon: function() { return 0.4; }
+          epsilon: function() { return (0.4 - (0.35 * (this.nIter / 1000000))); }
         };
 
         return spec;
@@ -131,7 +143,8 @@
 
 
       initializeEnvironment() {
-        let numStates = 2;
+        let that = this;
+        let numStates = 4;
         let actionSpace = 4;
 
         let distance = function(agentOne, agentTwo) {
@@ -139,14 +152,13 @@
           // let dx = agentOne.x - agentTwo.x,
           //  dy = agentOne.y - agentTwo.y;
 
-          let dx = agentOne.x - 840,
-            dy = agentOne.y - 300;
+          let dx = agentOne.x - that.x,
+            dy = agentOne.y - that.y;
 
           return Math.sqrt((dx * dx) + (dy * dy));
         };
 
-        this.maxDistance = 1955;
-        let that = this;
+        this.maxDistance = distance({x:this.maxWidth, y:this.maxHeight}, {});
 
         var env = { };
         env.getMaxNumActions = function() { return actionSpace; };
@@ -185,35 +197,22 @@
             // let dx = agentOne.x - agentTwo.x,
             //  dy = agentOne.y - agentTwo.y;
 
-            let dx = agentOne.x - 300,
-              dy = agentOne.y - 300;
+            let dx = agentOne.x - that.x,
+              dy = agentOne.y - that.y;
 
             return Math.sqrt((dx * dx) + (dy * dy));
           };
 
           let totalReward = 0.0;
-          /* for (let i = 0; i < that.numAgents; ++i) {
-            if (i == currentAgent) continue;
-
-            let agentDistance = distance(agents[currentAgent], agents[i]);
-
-            // Reward for being close to other agents.
-            if (agentDistance < that.closeEnough)
-              totalReward += 1 / that.numAgents;
-
-            // Don't for being far.
-            else
-              totalReward -= 2 * agentDistance / (that.maxDistance * that.numAgents);
-          }*/
 
           let agentDistance = distance(agents[currentAgent], agents[0]);
 
-          if (agentDistance < 20)
-            totalReward = 1;
+          if (agentDistance < 80)
+            totalReward = 3;
           else if (agentDistance < agents[currentAgent].prevDistance)
-            totalReward = 0.5 - (agentDistance / that.maxDistance)
+            totalReward = 1 - (agentDistance / that.maxDistance)
           else
-            totalReward = 0
+            totalReward = -3 - (agentDistance / that.maxDistance)
 
           agents[currentAgent].prevDistance = agentDistance;
           return totalReward;
@@ -255,6 +254,11 @@
         setInterval(function() {
           var rewards = 0.0;
 
+          if (spec.nIter % 10000 == 0) {
+            this.x = (Math.random() * (window.innerWidth * 0.5)) + (window.innerWidth * 0.25)
+            this.y = (Math.random() * (window.innerHeight * 0.5)) + (window.innerHeight * 0.25)
+          }
+
           for (var i = 0; i < that.numAgents; ++i) {
             let currentState = that.getAgentState(agents[i]);
             let action = actor.act(currentState);
@@ -266,8 +270,12 @@
             actor.learn(reward);
           }
 
+          spec.nIter += 1;
+
           // currentState = that.getCurrentState(agents);
-          console.log('Average reward: ', rewards / that.numAgents)
+          that.aggregateReward.push(rewards / that.numAgents);
+          console.log('Reward: ', rewards / that.numAgents);
+          console.log('Iteration: ', spec.nIter);
 
           that.draw(agents);
         }, 10);
@@ -292,6 +300,18 @@
 
     mounted() {
 
+      // this.x = (Math.random() * (window.innerWidth * 0.5)) + (window.innerWidth * 0.25)
+      // this.y = (Math.random() * (window.innerHeight * 0.5)) + (window.innerHeight * 0.25)
+      this.x = window.innerHeight * 0.66;
+      this.y = window.innerWidth * 0.5;
+
+      console.log('(x,y): (', this.x, ', ', this.y, ')')
+
+      let that = this;
+      window.onbeforeunload = () => {
+        that.leaving();
+        return 'Get the reward array!';
+      }
 
       let agents = this.initializeAgents();
       let env = this.initializeEnvironment();
@@ -343,7 +363,7 @@
     width: 95%;
     height: 3px;
     z-index: 0;
-    background: #404F4F;
+    background: #2A3238;
     margin: auto;
   }
 
@@ -352,7 +372,8 @@
     font-size: 100px;
     margin: 0;
     height: 120px;
-    color: #404F4F;
+    /*color: #404F4F;*/
+    color: #2A3238;
   }
 
 </style>

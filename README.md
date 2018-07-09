@@ -18,8 +18,6 @@ The Reinforcement Learning problem setup.
 
 For my problem, I began thinking I would have the agents learn to cluster themselves by rewarding them based on their proximity to other agents.  If you keep reading you'll figure out that this didn't work as I wanted, so there is now a single learning agent that attempts to cluster all the circles around a randomly chosen point on the screen, resetting itself every time the page loads.
 
----
-
 
 
 ## Process

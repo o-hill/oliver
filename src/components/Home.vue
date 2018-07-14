@@ -4,37 +4,54 @@
       <rect x=300 y=300 height=10 width=10 fill='#ff0000'></rect>
       <rect width='100%' fill='#273239'></rect>
     </svg>
-    <div id='name'>
-      <p id='oliver'>Oliver</p>
-      <div id='line'></div>
-      <span></span>
-    </div>
-    <v-card
-      v-if='showInfo'
-      class='grey darken-4 blue-grey--text text--lighten-3'
-      style='position:fixed;bottom:8%;left:2%;z-index:0'>
-      <v-card-title class='welcome'>Welcome!</v-card-title>
-      <div class='sep'></div>
-      <v-card-text><p class='text-lg-left descriptor'>
-        This is an implementation of a Reinforcement Learning
-        technique <br /> called Epsilon-Greedy Deep Q-Network Learning. <br />
-        The circles are being controlled by a Neural Network, which
-        is <br /> learning to cluster the circles around a point in the
-        top left of the screen. <br /> This happens very slowly, but if you
-        leave this page up for a few hours, <br /> they'll all end up in the same place!<br />
-        <br />If you'd like to learn more about this project, click
-        the button below.
-      </p></v-card-text>
-      <v-btn flat icon
-        style='margin-bottom:20px;margin-top:0px;'><v-icon large>fab fa-github</v-icon></v-btn>
-    </v-card>
+    <transition name='fade'>
+      <div v-if='showName' id='name'>
+        <span 
+          onmouseover="this.style.cursor='pointer'"
+          onmouseout="this.style.cursor='default'"
+          @click='showTools()'
+          ><p id='oliver' class='fade-out'>Oliver</p></span>
+        <div id='line' class='fade-out'></div>
+        <span></span>
+      </div>
+    </transition>
+    <transition name='fade'>
+      <v-card
+        v-if='showInfo'
+        class='grey darken-4 blue-grey--text text--lighten-3'
+        style='position:fixed;bottom:8%;left:2%;z-index:0'>
+        <v-card-title class='welcome'>Welcome!</v-card-title>
+        <div class='sep'></div>
+        <v-card-text><p class='text-lg-left descriptor'>
+          This is an implementation of a Reinforcement Learning
+          technique <br /> called Epsilon-Greedy Deep Q-Network Learning. <br />
+          The circles are being controlled by a Neural Network, which
+          is <br /> learning to cluster the circles around a point in the
+          top left of the screen. <br /> This happens very slowly, but if you
+          leave this page up for a few hours, <br /> they'll all end up in the same place!<br />
+          <br />If you'd like to learn more about this project, click
+          the button below.
+        </p></v-card-text>
+        <a href='https://github.com/o-hill/oliver' target='_blank'><v-btn flat icon
+          style='margin-bottom:20px;margin-top:0px;'><v-icon large>fab fa-github</v-icon>
+        </v-btn></a>
+      </v-card>
+    </transition>
     <v-btn 
       flat icon
       style='position:fixed;left:2%;bottom:2%;z-index:0;'
-      color='blue-grey darken-2'
+      color='blue-grey'
       @click.native='showInfo = !showInfo'>
       <v-icon>info</v-icon>
     </v-btn>
+    <div id='tools' class='tools white--text' style='position:fixed;top:0;right:0;height:100%;width:10%;z-index:1;'>
+      <div class='outer' style='width:100%;'>
+        <div class='item' id='item0' style='margin-left:100%;'><a>Projects</a></div>
+        <div class='item' id='item1' style='margin-left:100%;'><a>Resume</a></div>
+        <div class='item' id='item2' style='margin-left:100%;'><a>Art</a></div>
+        <div class='item' id='item3' style='margin-left:100%;'><a>Thoughts</a></div>
+      </div>
+    </div>
   </v-layout>
 </template>
 
@@ -47,9 +64,10 @@
 
     data() {
       return {
+        showName: true,
         showInfo: false,
         maxRadius: 12,
-        numAgents: 250,
+        numAgents: 150,
         actionSpace: 4,
         stateSpace: 4 * this.numAgents,
         maxHeight: window.innerHeight,
@@ -71,10 +89,48 @@
 
     methods: {
 
-      leaving() {
-        console.log(JSON.stringify(this.aggregateReward));
-        alert('Get the reward dump!');
-        return 'Get the reward dump!';
+      showTools() {
+
+        this.showName = !this.showName;
+
+        // Start the animation.
+        function animate() {
+		  var id = requestAnimationFrame(animate);
+		  var result = TWEEN.update();
+		  if (!result) return;
+		}
+
+		var tweenGenerator = function(id) {
+
+          let position = { x: 100 },
+            target = { x: 0 };
+
+          var tween = new TWEEN.Tween(position)
+            .to(target, 600)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(function() {
+              $(id)[0].style.marginLeft = position.x + '%';
+            })
+
+          return tween;
+        }
+
+        let tweens = [ ];
+        for (var i = 0; i < 4; ++i) {
+          tweens.push(tweenGenerator('#item' + i))
+
+          if (i > 0) {
+            tweens[i].delay(200 * i);
+            //tweens[i - 1].chain(tweens[i]);
+          }
+        }
+
+        for (var i = 0; i < 4; ++i)
+          tweens[i].start();
+        //tweens[0].start();
+
+        animate();
+
       },
 
       initializeAgents() {
@@ -147,10 +203,7 @@
         let numStates = 4;
         let actionSpace = 4;
 
-        let distance = function(agentOne, agentTwo) {
-
-          // let dx = agentOne.x - agentTwo.x,
-          //  dy = agentOne.y - agentTwo.y;
+        let distance = function(agentOne) {
 
           let dx = agentOne.x - that.x,
             dy = agentOne.y - that.y;
@@ -158,7 +211,8 @@
           return Math.sqrt((dx * dx) + (dy * dy));
         };
 
-        this.maxDistance = distance({x:this.maxWidth, y:this.maxHeight}, {});
+        this.maxDistance = Math.max(distance({x: this.maxWidth, y: this.maxHeight}),
+                                  distance({x: 0, y: 0}));
 
         var env = { };
         env.getMaxNumActions = function() { return actionSpace; };
@@ -194,9 +248,6 @@
           // Get the distance between two agents.
           let distance = function(agentOne, agentTwo) {
 
-            // let dx = agentOne.x - agentTwo.x,
-            //  dy = agentOne.y - agentTwo.y;
-
             let dx = agentOne.x - that.x,
               dy = agentOne.y - that.y;
 
@@ -207,6 +258,7 @@
 
           let agentDistance = distance(agents[currentAgent], agents[0]);
 
+          // Reward function!
           if (agentDistance < 80)
             totalReward = 3;
           else if (agentDistance < agents[currentAgent].prevDistance)
@@ -225,19 +277,6 @@
         return [agent.x, agent.y];
       },
 
-      getCurrentState(agents) {
-        let state = [ ];
-
-        for (let i = 0; i < this.numAgents; ++i) {
-          state.push(agents[i].x);
-          state.push(agents[i].y);
-          state.push(agents[i].vx);
-          state.push(agents[i].vy);
-        }
-
-        return state;
-      },
-
       // Run the simulation.
       simulate(agents, env, spec) {
 
@@ -254,11 +293,6 @@
         setInterval(function() {
           var rewards = 0.0;
 
-          if (spec.nIter % 10000 == 0) {
-            this.x = (Math.random() * (window.innerWidth * 0.5)) + (window.innerWidth * 0.25)
-            this.y = (Math.random() * (window.innerHeight * 0.5)) + (window.innerHeight * 0.25)
-          }
-
           for (var i = 0; i < that.numAgents; ++i) {
             let currentState = that.getAgentState(agents[i]);
             let action = actor.act(currentState);
@@ -272,10 +306,14 @@
 
           spec.nIter += 1;
 
+          if (spec.nIter == 300)
+            $('#line').removeClass('fade-out');
+
+
           // currentState = that.getCurrentState(agents);
           that.aggregateReward.push(rewards / that.numAgents);
-          console.log('Reward: ', rewards / that.numAgents);
-          console.log('Iteration: ', spec.nIter);
+          // console.log('Reward: ', rewards / that.numAgents);
+          // console.log('Iteration: ', spec.nIter);
 
           that.draw(agents);
         }, 10);
@@ -302,16 +340,29 @@
 
       // this.x = (Math.random() * (window.innerWidth * 0.5)) + (window.innerWidth * 0.25)
       // this.y = (Math.random() * (window.innerHeight * 0.5)) + (window.innerHeight * 0.25)
-      this.x = window.innerHeight * 0.66;
-      this.y = window.innerWidth * 0.5;
+      this.x = 300;
+      this.y = 300;
+
+      document.body.className += ' fade-out';
+
+      $(function() {
+        $('body').removeClass('fade-out');
+        $('#oliver').removeClass('fade-out');
+      });
+
+      // For animating the line under the name.
+      /*var offsets = $('#line').offset();
+      console.log(offsets.top, offsets.left);
+
+      let canvas = d3.selectAll('#line')
+        .append('svg:svg')
+        .style('width', $('#line').width())
+        .style('height', $('#line').height())
+        .style('position', 'fixed')*/
 
       console.log('(x,y): (', this.x, ', ', this.y, ')')
 
       let that = this;
-      window.onbeforeunload = () => {
-        that.leaving();
-        return 'Get the reward array!';
-      }
 
       let agents = this.initializeAgents();
       let env = this.initializeEnvironment();
@@ -326,9 +377,20 @@
 
 <style>
 
+  html {
+    background-color: #2A3238;
+  }
+
   body {
     margin: 0;
     overflow: hidden;
+    opacity: 1;
+    transition: 0.5s opacity;
+  }
+
+  body.fade-out {
+    opacity: 0;
+    transition: none;
   }
 
   svg {
@@ -338,11 +400,26 @@
     margin: 0px;
   }
 
+  .outer {
+    position:absolute;
+    top: 35%;
+  }
+
+  .item {
+    width: 100%;
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
+
   .sep {
     width: 90%;
     height: 1px;
     background: #B0BEC5;
     margin-left: 20px;;
+  }
+
+  .tools {
+    font-family: 'Playfair Display', serif;
   }
 
   .welcome {
@@ -357,14 +434,22 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 0;
+    transition: all 1s ease;
   }
 
   #line {
-    width: 95%;
+    width: 90%;
     height: 3px;
     z-index: 0;
-    background: #2A3238;
+    background: #404F4F;
     margin: auto;
+    transition: width 1s ease; /*background 30s ease-in-out;*/
+  }
+
+  #line.fade-out {
+    width: 0%;
+    /*background: #2A3238;*/
+    transition: none;
   }
 
   #oliver {
@@ -372,8 +457,30 @@
     font-size: 100px;
     margin: 0;
     height: 120px;
-    /*color: #404F4F;*/
+    color: #404F4F;
+    transition: 30s color ease-in-out;
+  }
+
+  #oliver.fade-out {
     color: #2A3238;
+    transition: none;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity .5s;
+  }
+
+  .fade-enter, .fade-leave-to {
+    opacity: 0;
+  }
+
+  .slide_up {
+    opacity: 0;
   }
 
 </style>

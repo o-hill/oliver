@@ -10,15 +10,14 @@ As a brief introduction to Reinforcement Learning, the goal of this field of Mac
 is to have a computer learn a policy of how to act, given some state and some reward based
 on previous actions.  This problem setup is modeled on a statistical construct known as a  [Finite Markov Decision Process](https://en.wikipedia.org/wiki/Markov_decision_process).  To learn more about the general problem of Reinforcement Learning and what it can be used for, check out the [wikipedia page here](https://en.wikipedia.org/wiki/Reinforcement_learning).
 
+The Reinforcement Learning problem setup.
+![Image](https://d3ansictanv2wj.cloudfront.net/image3-5f8cbb1fb6fb9132fef76b13b8687bfc.png)
+
 ### Goal
----
 
 For my problem, I began thinking I would have the agents learn to cluster themselves by rewarding them based on their proximity to other agents.  If you keep reading you'll figure out that this didn't work as I wanted, so there is now a single learning agent that attempts to cluster all the circles around a randomly chosen point on the screen, resetting itself every time the page loads.
 
----
 
-The Reinforcement Learning problem setup.
-![Image](https://d3ansictanv2wj.cloudfront.net/image3-5f8cbb1fb6fb9132fef76b13b8687bfc.png)
 
 ## Process
 

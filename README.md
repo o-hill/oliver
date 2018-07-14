@@ -2,6 +2,8 @@
 
 This is the code for my personal website, which will (hopefully) be hosted at oliverhill.io at some point.
 
+The code is written entirely in javascript, using Vue.js as a framework.  I'm using a reinforcement learning library for the RL part, as well as D3.js and Tween.js to implement animations (even though I'm pretty sure I only need one of them).
+
 # Home Page
 
 The home page implements a classic Reinforcement Learning algorithm called Epsilon-Greedy Deep Q-Network Learning.  I would like to be clear that I did not write the RL component to this - I just set up the environment for it to work in.  All the neural network components were written by Andrej Karpathy, and you can [find the library here](https://github.com/karpathy/reinforcejs).

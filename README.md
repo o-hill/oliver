@@ -41,7 +41,7 @@ So essentially the computer is learning to maximize the quality of each action i
 
 My first idea was to implement Tabular Q-Learning for this task.  Tabular Q-Learning is simple to implement (no need to include back-propagated neural networks), and relies upon explicitly storing the quality of each state.  This is great for a problem with a small state space, but my problem involves a discrete state at each pixel of the screen, which equates to 5,184,000 states on my computer! If we're lucky, the alignment would work out and the table storing the data would end up being around 42 megabytes in size - far too large for this application.  
 
-Also, with only 150 'agents', it would take a very long time to start learning the qualities of actions at enough states for this to be useful. If each agent explored a state that had not been visited previously by it or any other agent, it would still take over 34,000 iterations of moving every agent to explore each state a single time, which won't give us any information about what actions we should be taking at these states. On to the next idea.
+With only 150 'agents', it would take a very long time to start learning the qualities of actions at enough states for this to be useful. If each agent explored a state that had not been visited previously by it or any other agent, it would still take over 34,000 iterations of moving every agent to explore each state a single time, which won't give us any information about what actions we should be taking at these states. On to the next idea.
 
 #### Deep Q-Network Learning
 ---

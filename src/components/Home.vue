@@ -1,9 +1,9 @@
 <template>
   <v-layout>
     <svg id='overlay' height='100vh' width='100vw'>
-      <rect x=300 y=300 height=10 width=10 fill='#ff0000'></rect>
-      <rect width='100%' fill='#273239'></rect>
+      <rect id='background' width='100%' fill='#273239'></rect>
     </svg>
+    <art v-if='showArt'></art>
     <transition name='fade'>
       <div v-if='showName' id='name'>
         <span 
@@ -39,17 +39,22 @@
     </transition>
     <v-btn 
       flat icon
+      v-if='showInfoButton'
       style='position:fixed;left:2%;bottom:2%;z-index:0;'
       color='blue-grey'
       @click.native='showInfo = !showInfo'>
       <v-icon>info</v-icon>
     </v-btn>
-    <div id='tools' class='tools white--text' style='position:fixed;top:0;right:0;height:100%;width:10%;z-index:1;'>
+    <div id='tools' class='tools white--text'>
       <div class='outer' style='width:100%;'>
-        <div class='item' id='item0' style='margin-left:100%;'><a>Projects</a></div>
-        <div class='item' id='item1' style='margin-left:100%;'><a>Resume</a></div>
-        <div class='item' id='item2' style='margin-left:100%;'><a>Art</a></div>
-        <div class='item' id='item3' style='margin-left:100%;'><a>Thoughts</a></div>
+        <menu-link v-for='item in toolsList' 
+          :key='item.id' 
+          :id='item.id' 
+          :name='item.name' 
+          :agents='agents' 
+          :title='item.title'
+          v-on:navigate='navigateAway'>
+        </menu-link>
       </div>
     </div>
   </v-layout>
@@ -59,15 +64,39 @@
 <script>
 
   import { R, RL } from './rl.js';
+  import MenuLink from './Links.vue';
+  import Art from './Art.vue';
+  import Vue from 'vue';
+
 
   export default {
 
+    name: 'Homepage',
+
+    components: {
+      MenuLink,
+      Art
+    },
+
+    props: [
+      'originalRequest'
+    ],
+
     data() {
       return {
+        toolsList: [
+          { id: 'item0', name: 'projects', title: 'Projects' },
+          { id: 'item1', name: 'resume', title: 'Resume' },
+          { id: 'item2', name: 'art', title: 'Art' },
+          { id: 'item3', name: 'thoughts', title: 'Thoughts' }
+        ],
+        numTools: 4,
         showName: true,
         showInfo: false,
+        showInfoButton: true,
+        showArt: false,
         maxRadius: 12,
-        numAgents: 150,
+        numAgents: 5,
         actionSpace: 4,
         stateSpace: 4 * this.numAgents,
         maxHeight: window.innerHeight,
@@ -75,6 +104,8 @@
         aggregateReward: [ ],
         x: 0,
         y: 0,
+        agents: [ ],
+        learn: true,
 
         // How far an agent can move in a single D3 transition.
         transitionSpeed: 300,
@@ -89,16 +120,105 @@
 
     methods: {
 
+
+      navigateAway(name) {
+        console.log(name)
+        let that = this;
+
+        // Reset the html background to black.
+        $('html')[0].style.backgroundColor = '#555555';
+
+        // Transition from normal to black background.
+        let current = { opacity: 1 };
+        let target = { opacity: 0 };
+        var backgroundTween = new TWEEN.Tween(current)
+          .to(target, 1000)
+          .easing(TWEEN.Easing.Quadratic.Out)
+          .onUpdate(function() {
+            $('#background')[0].style.opacity = current.opacity
+          }).start()
+        this.animate()
+
+        // Stop the reinforcement learning movement.
+        this.learn = false;
+        this.showInfoButton = false;
+
+        if (name == 'art')
+          setTimeout(function() { that.showArt = true; }, 1000);
+      },
+
+      beginNewLife(env) {
+
+        let that = this;
+        let svg = d3.select('svg')
+
+        for (var i = 0; i < this.agents.length; ++i)
+          this.agents[i] = env.step(this.agents[i], Math.floor(Math.random() * 4), 20)
+
+        // Add more circles for fun!
+        /*for (var i = 0; i < 200; ++i)
+          this.agents.push({
+            'x': Math.floor(Math.random() * window.innerWidth),
+            'y': Math.floor(Math.random() * window.innerHeight),
+            'radius': Math.floor(Math.random() * this.maxRadius) + 5,
+            'vx': (Math.random() * 50) * 0.1 - 0.05,
+            'vy': (Math.random() * 50) * 0.1 - 0.05,
+            'prevDistance': 1680,
+            'color': '#ffffff'
+          });*/
+
+        // Move all the circles to random locations and make them tiny.
+        let circle = svg.selectAll('circle')
+          .data(that.agents)
+
+        circle.enter().append('circle')
+          .attr('cx', function(d) { return d.x; })
+          .attr('cy', function(d) { return d.y; })
+          .attr('r', function(d) { return d.radius / 3; })
+          .style('opacity', function() { return Math.random(); })
+          .style('fill', '#000000')
+          .call(function(selection) {
+
+            for (var i = that.numAgents; i < that.agents.length; ++i)
+              that.agents[i] = env.step(that.agents[i], Math.floor(Math.random() * 4), 3)
+
+            selection.transition().duration(3000)
+              .attr('cx', function(d) { return d.x; })
+              .attr('cy', function(d) { return d.y; })
+              .style('fill', '#ffffff')
+          })
+
+        circle.transition().duration(2000)
+          .ease(d3.easeQuadInOut)
+          .attr('cx', function(d) { return d.x; })
+          .attr('cy', function(d) { return d.y; })
+          .attr('r', function(d) { return d.radius / 4; })
+          .style('fill', '#ffffff')
+
+        console.log('past update')
+
+        // Make the circles float aimlessly around screen.
+        setTimeout(function() {
+          var intervalId = setInterval(function() {
+
+            for (var i = 0; i < that.agents.length; ++i)
+              that.agents[i] = env.step(that.agents[i], Math.floor(Math.random() * 4));
+
+            that.draw(that.agents, that.transitionSpeed * 3);
+
+          }, 10000);
+        }, 1000);
+      },
+
+      animate() {
+		var id = requestAnimationFrame(this.animate);
+		var result = TWEEN.update();
+		if (!result) return;
+	  },
+
       showTools() {
 
         this.showName = !this.showName;
-
-        // Start the animation.
-        function animate() {
-		  var id = requestAnimationFrame(animate);
-		  var result = TWEEN.update();
-		  if (!result) return;
-		}
 
 		var tweenGenerator = function(id) {
 
@@ -116,7 +236,7 @@
         }
 
         let tweens = [ ];
-        for (var i = 0; i < 4; ++i) {
+        for (var i = 0; i < this.numTools; ++i) {
           tweens.push(tweenGenerator('#item' + i))
 
           if (i > 0) {
@@ -125,19 +245,20 @@
           }
         }
 
-        for (var i = 0; i < 4; ++i)
+        for (var i = 0; i < this.numTools; ++i)
           tweens[i].start();
-        //tweens[0].start();
 
-        animate();
+        this.animate();
 
       },
 
       initializeAgents() {
 
+        console.log('initialize');
+
         let svg = d3.select('svg');
         let that = this;
-        let agents = [ ];
+        let agents = this.agents;
 
         for (let i = 0; i < this.numAgents; ++i) {
 
@@ -148,7 +269,8 @@
             'radius': Math.floor(Math.random() * this.maxRadius) + 5,
             'vx': (Math.random() * 50) * 0.1 - 0.05,
             'vy': (Math.random() * 50) * 0.1 - 0.05,
-            'prevDistance': 1680
+            'prevDistance': 1680,
+            'color': '#ffffff'
           });
         }
 
@@ -160,23 +282,15 @@
           return sample / 6;
         }
 
-        var draw = function(selection) {
-          selection
-            .attr('r', function(d, i) { return d.radius; })
-            .attr('cx', function(d) { return d.x; })
-            .attr('cy', function(d) { return d.y; })
-            .style('opacity', function(d) { return gaussianRandom(); })
-        };
-
         var circle = svg.selectAll('circle')
           .data(agents)
 
         circle.enter().append('circle')
-          .attr('r', 0)
+          .attr('r', function(d) { return d.radius; })
           .attr('cx', function(d) { return d.x; })
           .attr('cy', function(d) { return d.y; })
           .attr('fill', '#ffffff')
-          .transition().duration(that.transitionSpeed).call(draw)
+          .style('opacity', function() { return gaussianRandom(); })
 
         return agents;
       },
@@ -218,16 +332,17 @@
         env.getMaxNumActions = function() { return actionSpace; };
         env.getNumStates = function() { return numStates; };
 
-        env.step = function(agent, action) {
+        // Move the agent.
+        env.step = function(agent, action, speedCoefficient = 1) {
 
           if (action == 0)
-            agent.x += agent.vx;
+            agent.x += (agent.vx * speedCoefficient);
           else if (action == 1)
-            agent.x -= agent.vx;
+            agent.x -= (agent.vx * speedCoefficient);
           else if (action == 2)
-            agent.y += agent.vy;
+            agent.y += (agent.vy * speedCoefficient);
           else // action == 3
-            agent.y -= agent.vy;
+            agent.y -= (agent.vy * speedCoefficient);
 
           // Keep the agents contained.
           if (agent.x > that.maxWidth)
@@ -245,18 +360,8 @@
 
         env.calculateReward = function(agents, currentAgent) {
 
-          // Get the distance between two agents.
-          let distance = function(agentOne, agentTwo) {
-
-            let dx = agentOne.x - that.x,
-              dy = agentOne.y - that.y;
-
-            return Math.sqrt((dx * dx) + (dy * dy));
-          };
-
           let totalReward = 0.0;
-
-          let agentDistance = distance(agents[currentAgent], agents[0]);
+          let agentDistance = distance(agents[currentAgent]);
 
           // Reward function!
           if (agentDistance < 80)
@@ -281,56 +386,54 @@
       simulate(agents, env, spec) {
 
         let that = this;
-        /*let actors = [ ];
-        for (var i = 0; i < this.numAgents; ++i) {
-          actors.push(new RL.DQNAgent(env, spec));
-        }*/
-
         let actor = new RL.DQNAgent(env, spec);
 
-        // let currentState = this.getCurrentState(agents);
-
-        setInterval(function() {
-          var rewards = 0.0;
+        var interval = setInterval(function() {
 
           for (var i = 0; i < that.numAgents; ++i) {
-            let currentState = that.getAgentState(agents[i]);
-            let action = actor.act(currentState);
+
+            // Find the optimal action in the current state.
+            let action = actor.act([agents[i].x, agents[i].y]);
 
             agents[i] = env.step(agents[i], action);
-            let reward = env.calculateReward(agents, i);
-            rewards += reward;
 
+            // Calculate the reward based on the action taken.
+            let reward = env.calculateReward(agents, i);
+
+            // Backpropogate through the neural network to try and learn.
             actor.learn(reward);
           }
 
           spec.nIter += 1;
 
+          // Arbitrary estimate?
           if (spec.nIter == 300)
             $('#line').removeClass('fade-out');
 
-
-          // currentState = that.getCurrentState(agents);
-          that.aggregateReward.push(rewards / that.numAgents);
-          // console.log('Reward: ', rewards / that.numAgents);
-          // console.log('Iteration: ', spec.nIter);
-
           that.draw(agents);
+
+          if (!that.learn) {
+            clearInterval(interval)
+            that.beginNewLife(env)
+          }
+
         }, 10);
+
       },
 
       // Draw the agents.
-      draw(agents) {
+      draw(agents, transDuration = this.transitionSpeed) {
 
         let that = this;
         let svg = d3.selectAll('svg');
 
         var circle = svg.selectAll('circle')
           .data(agents)
-          .transition().duration(that.transitionSpeed)
+          .transition().duration(transDuration)
           .ease(d3.easeLinear)
           .attr('cx', function(d) { return d.x; })
           .attr('cy', function(d) { return d.y; })
+          .attr('fill', function(d) { return d.color; })
 
         return agents;
       }
@@ -338,37 +441,28 @@
 
     mounted() {
 
-      // this.x = (Math.random() * (window.innerWidth * 0.5)) + (window.innerWidth * 0.25)
-      // this.y = (Math.random() * (window.innerHeight * 0.5)) + (window.innerHeight * 0.25)
       this.x = 300;
       this.y = 300;
 
-      document.body.className += ' fade-out';
+      // Set up the reinforcement learning environment.
+      let agents = this.initializeAgents();
+      let env = this.initializeEnvironment();
+      let spec = this.initializeSpec();
 
+      // Run the environment.
+      this.simulate(agents, env, spec);
+
+      // Fade the circles and name in.
+      document.body.className += ' fade-out';
       $(function() {
         $('body').removeClass('fade-out');
         $('#oliver').removeClass('fade-out');
       });
 
-      // For animating the line under the name.
-      /*var offsets = $('#line').offset();
-      console.log(offsets.top, offsets.left);
-
-      let canvas = d3.selectAll('#line')
-        .append('svg:svg')
-        .style('width', $('#line').width())
-        .style('height', $('#line').height())
-        .style('position', 'fixed')*/
-
-      console.log('(x,y): (', this.x, ', ', this.y, ')')
-
-      let that = this;
-
-      let agents = this.initializeAgents();
-      let env = this.initializeEnvironment();
-      let spec = this.initializeSpec();
-
-      this.simulate(agents, env, spec);
+      if (this.originalRequest === 'false') {
+        this.showTools();
+        this.navigateAway();
+      }
     }
   }
 
@@ -378,7 +472,16 @@
 <style>
 
   html {
-    background-color: #2A3238;
+    background-color: #273239;
+  }
+
+  .strike {
+    position: absolute;
+    top: 55%;
+    right: 0%;
+    background: white;
+    width: 0%;
+    height: 0.5px;
   }
 
   body {
@@ -406,6 +509,7 @@
   }
 
   .item {
+    position: relative;
     width: 100%;
     margin-top: 30px;
     margin-bottom: 30px;
@@ -420,6 +524,15 @@
 
   .tools {
     font-family: 'Playfair Display', serif;
+  }
+
+  #tools {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 10%;
+    z-index: 1;
   }
 
   .welcome {

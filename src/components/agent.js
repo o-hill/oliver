@@ -59,6 +59,11 @@ var Agent = { };
 
     getState: function() {
       return [this.x, this.y];
+    },
+
+    slow: function(factor = 2) {
+      this.vx /= factor;
+      this.vy /= factor;
     }
   }
 

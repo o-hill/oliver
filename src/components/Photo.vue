@@ -13,10 +13,10 @@
           @mouseleave='removeButtons()'>
           <v-card id='button-card'>
             <div class='help-button'>
-              <v-btn color='blue-grey' @click='home' flat icon id='home-button'><v-icon>home</v-icon></v-btn>
+              <v-btn color='blue-grey' class='el' @click='home' flat icon id='home-button'><v-icon>home</v-icon></v-btn>
             </div>
             <div class='help-button'> 
-              <v-btn color='blue-grey' flat icon @click='poem' id='poem-button'><v-icon>info</v-icon></v-btn>
+              <v-btn color='blue-grey' class='el' flat icon @click='poem' id='poem-button'><v-icon>info</v-icon></v-btn>
             </div>
           </v-card>
         </div>
@@ -27,6 +27,8 @@
 
 
 <script>
+
+  import anime from 'animejs'
 
   export default {
 
@@ -54,93 +56,71 @@
 
       poem() {
         $('#overlay')[0].style['z-index'] = 11;
-        let overlayTween = this.tweenGenerator('#overlay', 0, 0.7, 'opacity', '', 600).start()
-        this.animate();
+
+        let overlayAnime = anime({
+          targets: '#overlay',
+          opacity: 0.7,
+          duration: 2000,
+          easing: 'easeInOutQuart'
+        })
+
       },
 
       removeOverlay() {
-        let overlayTween = this.tweenGenerator('#overlay', 0.7, 0, 'opacity', '', 600).start()
-        this.animate()
-        setTimeout(() => { $('#overlay')[0].style['z-index'] = 0; }, 600);
+
+        let overlayAnime = anime({
+          targets: '#overlay',
+          opacity: 0,
+          duration: 2000,
+          easing: 'easeInOutQuart',
+          complete: () => {
+            $('#overlay')[0].style['z-index'] = 0;
+          }
+        })
+
       },
 
       home() {
-        let that = this;
-
-        //let photoTween = this.tweenGenerator('#image', 1, 0, 'opacity', '', 1000).start()
-        //this.animate()
-        TWEEN.removeAll();
-        $('#button-card').remove()
-          
-        //setTimeout(this.begone(photoTween), 1000);
-        this.begone();
-      },
-
-      begone(tween) {
-
-        TWEEN.removeAll();
-
-        this.$router.push({ name: 'Home', params: { originalRequest: 'false' }})
-      },
-
-      tweenGenerator(id, start, end, attr, addString, duration=600) {
-
-        let position = { x: start },
-          target = { x: end };
-
-        var tween = new TWEEN.Tween(position)
-          .to(target, duration)
-          .onUpdate(function() {
-            $(id)[0].style[attr] = position.x + addString;
-          })
-
-        return tween;
+        this.$router.push({ name: 'Home' })
       },
 
       showButtons() {
 
-        let homeTween = this.tweenGenerator('#home-button', 0, 100, 'opacity', '', 1000),
-          poemTween = this.tweenGenerator('#poem-button', 0, 100, 'opacity', '', 1000);
+        var buttonAnime = anime({
+          targets: '#button-card .el',
+          opacity: 1,
+          marginRight: '0%',
+          duration: 1000,
+          ease: 'easeInOutQuart',
+          delay: function(el, i, l) {
+            return i * 200;
+          }
+        });
 
-        let homeMarginTween = this.tweenGenerator('#home-button', 10, 0, 'margin-right', '%'),
-          poemMarginTween = this.tweenGenerator('#poem-button', 10, 0, 'margin-right', '%');
-
-        homeTween.easing(TWEEN.Easing.Exponential.In).start()
-        poemTween.easing(TWEEN.Easing.Exponential.In).delay(200).start();
-
-        homeMarginTween.easing(TWEEN.Easing.Exponential.Out).start()
-        poemMarginTween.easing(TWEEN.Easing.Exponential.Out).delay(200).start();
-
-        this.animate();
       },
 
       removeButtons() {
 
-        let homeTween = this.tweenGenerator('#home-button', 100, 0, 'opacity', ''),
-          poemTween = this.tweenGenerator('#poem-button', 100, 0, 'opacity', '');
+        var buttonAnime = anime({
+          targets: '#button-card .el',
+          opacity: 0,
+          marginRight: '20%',
+          duration: 1000,
+          ease: 'easeInOutQuart',
+          delay: function(el, i, l) {
+            return i * 200;
+          }
+        });
 
-        let homeMarginTween = this.tweenGenerator('#home-button', 0, 10, 'margin-right', '%'),
-          poemMarginTween = this.tweenGenerator('#poem-button', 0, 10, 'margin-right', '%');
-
-        homeMarginTween.start()
-        poemMarginTween.delay(200).start()
-
-        homeTween.easing(TWEEN.Easing.Exponential.In).start();
-        poemTween.easing(TWEEN.Easing.Exponential.In).delay(200).start();
-
-        this.animate();
-      },
-
-      animate() {
-        if (TWEEN.update())
-          requestAnimationFrame(this.animate);
       }
+
     },
 
     mounted() {
 
       let that = this;
 
+      // Prevent right click.
       document.addEventListener("contextmenu", function(e){
         e.preventDefault();
       }, false);
@@ -153,15 +133,14 @@
         }
       }, 50);
 
-      let position = { opacity: 0 }, target = { opacity: 1 };
-      var tween = new TWEEN.Tween(position)
-        .to(target, 3000)
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(function() {
-          $('#image')[0].style.opacity = position.opacity;
-        }).delay(50).start()
+      // Make the photo visible.
+      let photoAnime = anime({
+        targets: '#image',
+        opacity: 1,
+        duration: 10000,
+        delay: 50
+      })
 
-      this.animate();
     }
   }
 

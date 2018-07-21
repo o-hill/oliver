@@ -10,14 +10,8 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'Gateway',
-      component: Transitioner
-    },
-    {
-      path: '/:originalRequest',
       name: 'Home',
       component: Home,
-      props: true
     },
     {
       path: '/photo/:name',

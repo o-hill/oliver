@@ -16,6 +16,8 @@
 
 <script>
 
+  import anime from 'animejs';
+
   export default {
 
     name: 'MenuLink',
@@ -40,36 +42,34 @@
       strikeThrough() {
 
         // Strike the work.
-        let position = { width: 0 }, target = { };
         let name = '#' + this.name;
+        let target = 0;
 
         if (name == '#art')
-          target.width = 60;
+          target = 60;
         else
-          target.width = 70;
+          target = 70;
 
-        var tween = new TWEEN.Tween(position)
-          .to(target, 400)
-          .easing(TWEEN.Easing.Quadratic.Out)
-          .onUpdate(function() {
-            $(name)[0].style.width = position.width + '%';
-          }).start()
-
-        this.animate();
+        var strikeAnime = anime({
+          targets: name,
+          width: target + '%',
+          duration: 400,
+          easing: 'easeInOutQuart'
+        });
 
         // Color some random circles.
         var color = '';
 
-        if (name == '#projects')
+        if (name === '#projects')
           color = '#d99278';
-        else if (name == '#resume')
+        else if (name === '#resume')
           color = '#357ba2';
-        else if (name == '#art')
+        else if (name === '#art')
           color = '#ccaecf';
         else
           color = '#000000';
 
-        for (var i = 0; i < 17; ++i) {
+        for (var i = 0; i < 175; ++i) {
           let index = Math.floor(Math.random() * this.agents.length);
           this.agents[index].color = color;
         }
@@ -78,33 +78,26 @@
 
       removeStrike() {
 
-        let position = { }, target = { width: 0 };
         let name = '#' + this.name;
+        let position = 0;
 
         if (name == '#art')
-          position.width = 60;
+          position = 60;
         else
-          position.width = 70;
+          position = 70;
 
-        var tween = new TWEEN.Tween(position)
-          .to(target, 400)
-          .easing(TWEEN.Easing.Quadratic.Out)
-          .onUpdate(function() {
-            $(name)[0].style.width = position.width + '%';
-          }).start()
-
-        this.animate();
+        var strikeAnime = anime({
+          targets: name,
+          width: 0,
+          duration: 400,
+          easing: 'easeInOutQuart'
+        });
 
         // Remove coloring on the circles.
         for (var i = 0; i < this.agents.length; ++i)
           this.agents[i].color = '#ffffff';
-      },
+      }
 
-      animate() {
-		var id = requestAnimationFrame(this.animate);
-		var result = TWEEN.update();
-		//if (!result) return;
-	  }
 	}
   }
 

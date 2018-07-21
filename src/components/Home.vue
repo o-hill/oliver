@@ -1,5 +1,15 @@
 <template>
   <v-layout>
+    <div id='entrance' @click='enter()'>
+      <p id='gatekeeper'>Roots, fallen branches<br/>
+        Vermillion leaves falling <br/>
+        Soft earth underfoot <br/>
+        <br/>
+        Pinecones suspended <br/>
+        Trees older than memory <br/>
+        Stories passed along <br/>
+        <br/><br/>(click)</p>
+    </div>
     <svg id='overlay' height='100vh' width='100vw'>
       <rect id='background' width='100%' fill='#273239'></rect>
     </svg>
@@ -63,10 +73,12 @@
 
 <script>
 
+  import { Agent } from './agent.js';
   import { R, RL } from './rl.js';
   import MenuLink from './Links.vue';
   import Art from './Art.vue';
   import Vue from 'vue';
+  import anime from 'animejs'
 
 
   export default {
@@ -96,7 +108,7 @@
         showInfoButton: true,
         showArt: false,
         maxRadius: 12,
-        numAgents: 5,
+        numAgents: 150,
         actionSpace: 4,
         stateSpace: 4 * this.numAgents,
         maxHeight: window.innerHeight,
@@ -121,12 +133,23 @@
     methods: {
 
 
+      enter() {
+        var fadeOverlay = anime({
+          targets: '#entrance',
+          opacity: 0,
+          duration: 3000,
+          complete: function() {
+            $('#entrance')[0].style['z-index'] = -1;
+          }
+        });
+      },
+
       navigateAway(name) {
         console.log(name)
         let that = this;
 
         // Reset the html background to black.
-        $('html')[0].style.backgroundColor = '#555555';
+        $('html')[0].style.backgroundColor = '#000000';
 
         // Transition from normal to black background.
         let current = { opacity: 1 };
@@ -152,8 +175,12 @@
         let that = this;
         let svg = d3.select('svg')
 
-        for (var i = 0; i < this.agents.length; ++i)
-          this.agents[i] = env.step(this.agents[i], Math.floor(Math.random() * 4), 20)
+        for (var i = 0; i < this.agents.length; ++i) {
+          //this.agents[i] = env.step(this.agents[i], Math.floor(Math.random() * 4), 20)
+          this.agents[i].vx /= 2;
+          this.agents[i].vy /= 2;
+          this.agents[i].act(Math.floor(Math.random() * 4), 20)
+        }
 
         // Add more circles for fun!
         /*for (var i = 0; i < 200; ++i)
@@ -166,6 +193,16 @@
             'prevDistance': 1680,
             'color': '#ffffff'
           });*/
+
+        for (var i = 0; i < 200; ++i)
+          this.agents.push(new Agent.Agent(
+            window.innerWidth,
+            window.innerHeight,
+            this.maxRadius,
+            this.x,
+            this.y,
+            Math.random
+          ));
 
         // Move all the circles to random locations and make them tiny.
         let circle = svg.selectAll('circle')
@@ -204,10 +241,10 @@
             for (var i = 0; i < that.agents.length; ++i)
               that.agents[i] = env.step(that.agents[i], Math.floor(Math.random() * 4));
 
-            that.draw(that.agents, that.transitionSpeed * 3);
+            that.draw(that.transitionSpeed * 3);
 
-          }, 10000);
-        }, 1000);
+          }, 10);
+        }, 2000);
       },
 
       animate() {
@@ -260,20 +297,6 @@
         let that = this;
         let agents = this.agents;
 
-        for (let i = 0; i < this.numAgents; ++i) {
-
-          // Find the starting position of the new agent.
-          agents.push({
-            'x': Math.floor(Math.random() * window.innerWidth),
-            'y': Math.floor(Math.random() * window.innerHeight),
-            'radius': Math.floor(Math.random() * this.maxRadius) + 5,
-            'vx': (Math.random() * 50) * 0.1 - 0.05,
-            'vy': (Math.random() * 50) * 0.1 - 0.05,
-            'prevDistance': 1680,
-            'color': '#ffffff'
-          });
-        }
-
         var gaussianRandom = () => {
           let sample = 0.0;
           for (var i = 0; i < 6; ++i) 
@@ -282,15 +305,40 @@
           return sample / 6;
         }
 
+        for (let i = 0; i < this.numAgents; ++i) {
+
+          this.agents.push(new Agent.Agent(
+            window.innerWidth,
+            window.innerHeight,
+            this.maxRadius,
+            this.x,
+            this.y,
+            gaussianRandom
+          ));
+
+          // Find the starting position of the new agent.
+          /*agents.push({
+            'x': Math.floor(Math.random() * window.innerWidth),
+            'y': Math.floor(Math.random() * window.innerHeight),
+            'radius': Math.floor(Math.random() * this.maxRadius) + 5,
+            'vx': (Math.random() * 50) * 0.1 - 0.05,
+            'vy': (Math.random() * 50) * 0.1 - 0.05,
+            'prevDistance': 1680,
+            'color': '#ffffff'
+          });*/
+        }
+
+        console.log(this.agents);
+
         var circle = svg.selectAll('circle')
-          .data(agents)
+          .data(this.agents)
 
         circle.enter().append('circle')
           .attr('r', function(d) { return d.radius; })
           .attr('cx', function(d) { return d.x; })
           .attr('cy', function(d) { return d.y; })
           .attr('fill', '#ffffff')
-          .style('opacity', function() { return gaussianRandom(); })
+          .style('opacity', function(d) { return d.opacity; })
 
         return agents;
       },
@@ -358,20 +406,20 @@
           return agent;
         };
 
-        env.calculateReward = function(agents, currentAgent) {
+        env.calculateReward = function(currentAgent) {
 
           let totalReward = 0.0;
-          let agentDistance = distance(agents[currentAgent]);
+          let agentDistance = that.agents[currentAgent].distance();
 
           // Reward function!
           if (agentDistance < 80)
             totalReward = 3;
-          else if (agentDistance < agents[currentAgent].prevDistance)
+          else if (agentDistance < that.agents[currentAgent].prevDistance)
             totalReward = 1 - (agentDistance / that.maxDistance)
           else
             totalReward = -3 - (agentDistance / that.maxDistance)
 
-          agents[currentAgent].prevDistance = agentDistance;
+          that.agents[currentAgent].prevDistance = agentDistance;
           return totalReward;
         };
 
@@ -383,7 +431,7 @@
       },
 
       // Run the simulation.
-      simulate(agents, env, spec) {
+      simulate(env, spec) {
 
         let that = this;
         let actor = new RL.DQNAgent(env, spec);
@@ -393,12 +441,13 @@
           for (var i = 0; i < that.numAgents; ++i) {
 
             // Find the optimal action in the current state.
-            let action = actor.act([agents[i].x, agents[i].y]);
+            let action = actor.act(that.agents[i].getState());
 
-            agents[i] = env.step(agents[i], action);
+            //agents[i] = env.step(agents[i], action);
+            that.agents[i].act(action);
 
             // Calculate the reward based on the action taken.
-            let reward = env.calculateReward(agents, i);
+            let reward = env.calculateReward(i);
 
             // Backpropogate through the neural network to try and learn.
             actor.learn(reward);
@@ -410,7 +459,7 @@
           if (spec.nIter == 300)
             $('#line').removeClass('fade-out');
 
-          that.draw(agents);
+          that.draw();
 
           if (!that.learn) {
             clearInterval(interval)
@@ -422,20 +471,18 @@
       },
 
       // Draw the agents.
-      draw(agents, transDuration = this.transitionSpeed) {
+      draw(transDuration = this.transitionSpeed) {
 
         let that = this;
         let svg = d3.selectAll('svg');
 
         var circle = svg.selectAll('circle')
-          .data(agents)
+          .data(that.agents)
           .transition().duration(transDuration)
           .ease(d3.easeLinear)
           .attr('cx', function(d) { return d.x; })
           .attr('cy', function(d) { return d.y; })
           .attr('fill', function(d) { return d.color; })
-
-        return agents;
       }
     },
 
@@ -445,12 +492,13 @@
       this.y = 300;
 
       // Set up the reinforcement learning environment.
-      let agents = this.initializeAgents();
+      //let agents = this.initializeAgents();
+      this.initializeAgents();
       let env = this.initializeEnvironment();
       let spec = this.initializeSpec();
 
       // Run the environment.
-      this.simulate(agents, env, spec);
+      this.simulate(env, spec);
 
       // Fade the circles and name in.
       document.body.className += ' fade-out';
@@ -470,6 +518,27 @@
 
 
 <style>
+
+  #entrance {
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0.8;
+    background-color: #111;
+  }
+
+  #gatekeeper {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Lora', serif;
+    color: white;
+    font-size: 18px;
+  }
 
   html {
     background-color: #273239;

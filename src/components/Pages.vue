@@ -1,5 +1,4 @@
 <template>
-  <!-- <component :is='view'></component> -->
 </template>
 
 
@@ -29,3 +28,4 @@
 
 
 </script>
+

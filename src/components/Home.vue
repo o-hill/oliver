@@ -1,5 +1,20 @@
 <template>
   <v-layout>
+    <transition name='fade'>
+      <div id='resume-mask' class='mask' v-if='showResume'>
+        <resume></resume>
+      </div>
+    </transition>
+    <transition name='fade'>
+      <div id='project-mask' class='mask' v-if='showProjects'>
+        <projects></projects>
+      </div>
+    </transition>
+    <transition name='fade'>
+      <div id='thoughts-mask' class='mask' v-if='showThoughts'>
+        <thoughts></thoughts>
+      </div>
+    </transition>
     <div id='entrance' @click='enter()'>
       <p id='gatekeeper'>Roots, fallen branches<br/>
         Vermillion leaves falling <br/>
@@ -13,7 +28,6 @@
     <svg id='overlay' height='100vh' width='100vw'>
       <rect id='background' width='100%' fill='#273239'></rect>
     </svg>
-    <art v-if='showArt'></art>
     <transition name='fade'>
       <div v-if='showName' id='name'>
         <span 
@@ -76,9 +90,12 @@
   import { Agent } from './agent.js';
   import { R, RL } from './rl.js';
   import MenuLink from './Links.vue';
+  import Resume from './Resume.vue';
+  import Projects from './Projects.vue';
   import Art from './Art.vue';
+  import Thoughts from './Test.vue';
   import Vue from 'vue';
-  import anime from 'animejs'
+  import anime from 'animejs';
 
 
   export default {
@@ -87,7 +104,10 @@
 
     components: {
       MenuLink,
-      Art
+      Art,
+      Resume,
+      Projects,
+      Thoughts
     },
 
     data() {
@@ -102,9 +122,12 @@
         showName: true,
         showInfo: false,
         showInfoButton: true,
-        showArt: false,
-        maxRadius: 12,
-        numAgents: 150,
+        showResume: false,
+        showProjects: false,
+        showThoughts: false,
+        keepColor: false,
+        maxRadius: 10,
+        numAgents: 100,
         actionSpace: 4,
         stateSpace: 4 * this.numAgents,
         maxHeight: window.innerHeight,
@@ -128,12 +151,17 @@
 
     methods: {
 
+      resetSpace() {
+        this.showResume = false;
+        this.showProjects = false;
+      },
 
       enter() {
         var fadeOverlay = anime({
           targets: '#entrance',
           opacity: 0,
-          duration: 3000,
+          duration: 1000,
+          easing: 'linear',
           complete: function() {
             $('#entrance')[0].style['z-index'] = -1;
           }
@@ -142,7 +170,29 @@
 
       navigateAway(name) {
 
-        console.log(name);
+        this.resetSpace();
+        this.keepColor = true;
+
+        if (name === 'Art')
+          this.$router.push({ name: name });
+        else if (name == 'Resume') {
+          this.showResume = true;
+          setTimeout(() => {
+            $('#resume-mask')[0].style.zIndex = 90;
+          }, 200);
+        }
+        else if (name == 'Projects') {
+          this.showProjects = true;
+          setTimeout(() => {
+            $('#project-mask')[0].style.zIndex = 90;
+          }, 200);
+        }
+        else if (name == 'Thoughts') {
+          this.showThoughts = true;
+          setTimeout(() => {
+            $('#thoughts-mask')[0].style.zIndex = 90;
+          }, 200);
+        }
       },
 
       beginNewLife(env) {
@@ -246,10 +296,10 @@
 
         var gaussianRandom = () => {
           let sample = 0.0;
-          for (var i = 0; i < 6; ++i) 
+          for (var i = 0; i < 4; ++i) 
             sample += Math.random()
 
-          return sample / 6;
+          return sample / 4;
         }
 
         for (let i = 0; i < this.numAgents; ++i) {
@@ -299,7 +349,7 @@
         let numStates = 4;
         let actionSpace = 4;
 
-        let distance = function(agentOne) {
+        let distance = (agentOne) => {
 
           let dx = agentOne.x - that.x,
             dy = agentOne.y - that.y;
@@ -307,40 +357,15 @@
           return Math.sqrt((dx * dx) + (dy * dy));
         };
 
+        // Approximate the farthest distance.  This isn't quite correct, but good enough.
         this.maxDistance = Math.max(distance({x: this.maxWidth, y: this.maxHeight}),
                                   distance({x: 0, y: 0}));
 
         var env = { };
-        env.getMaxNumActions = function() { return actionSpace; };
-        env.getNumStates = function() { return numStates; };
+        env.getMaxNumActions = () => { return actionSpace; };
+        env.getNumStates = () => { return numStates; };
 
-        // Move the agent.
-        /*env.step = function(agent, action, speedCoefficient = 1) {
-
-          if (action == 0)
-            agent.x += (agent.vx * speedCoefficient);
-          else if (action == 1)
-            agent.x -= (agent.vx * speedCoefficient);
-          else if (action == 2)
-            agent.y += (agent.vy * speedCoefficient);
-          else // action == 3
-            agent.y -= (agent.vy * speedCoefficient);
-
-          // Keep the agents contained.
-          if (agent.x > that.maxWidth)
-            agent.x = that.maxWidth - 10;
-          else if (agent.x < 0)
-            agent.x = 10;
-
-          if (agent.y > that.maxHeight)
-            agent.y = that.maxHeight - 10;
-          else if (agent.y < 0)
-            agent.y = 10;
-
-          return agent;
-        };*/
-
-        env.calculateReward = function(currentAgent) {
+        env.calculateReward = (currentAgent) => {
 
           let totalReward = 0.0;
           let agentDistance = that.agents[currentAgent].distance();
@@ -360,24 +385,20 @@
         return env;
       },
 
-      getAgentState(agent) {
-        return [agent.x, agent.y];
-      },
-
       // Run the simulation.
       simulate(env, spec) {
 
         let that = this;
         let actor = new RL.DQNAgent(env, spec);
 
-        var interval = setInterval(function() {
+        var interval = setInterval(() => {
 
           for (var i = 0; i < that.numAgents; ++i) {
 
             // Find the optimal action in the current state.
             let action = actor.act(that.agents[i].getState());
 
-            //agents[i] = env.step(agents[i], action);
+            // Take the action.
             that.agents[i].act(action);
 
             // Calculate the reward based on the action taken.
@@ -417,10 +438,13 @@
           .attr('cx', function(d) { return d.x; })
           .attr('cy', function(d) { return d.y; })
           .attr('fill', function(d) { return d.color; })
+          .style('opacity', function(d) { return d.opacity; })
       }
     },
 
     mounted() {
+
+      console.log('mounting...')
 
       this.x = 300;
       this.y = 300;
@@ -449,6 +473,16 @@
 
 <style>
 
+  .mask {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    margin: auto;
+    right: -17px;
+  }
+
   #entrance {
     position: absolute;
     z-index: 10;
@@ -472,6 +506,7 @@
 
   html {
     background-color: #273239;
+    overflow: hidden;
   }
 
   .strike {
@@ -523,6 +558,7 @@
 
   .tools {
     font-family: 'Playfair Display', serif;
+    z-index: 100 ;
   }
 
   #tools {
@@ -531,7 +567,7 @@
     right: 0;
     height: 100%;
     width: 10%;
-    z-index: 1;
+    z-index: 100;
   }
 
   .welcome {

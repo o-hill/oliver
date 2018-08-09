@@ -21,6 +21,7 @@
   export default {
 
     name: 'MenuLink',
+
     props: [
       'id',
       'name',
@@ -36,7 +37,7 @@
     methods: {
 
       click() {
-        this.$emit('navigate', this.name)
+        this.$emit('navigate', this.title)
       },
 
       strikeThrough() {
@@ -72,30 +73,30 @@
         for (var i = 0; i < 175; ++i) {
           let index = Math.floor(Math.random() * this.agents.length);
           this.agents[index].color = color;
+          this.agents[index].opacity = 1;
         }
 
       },
 
       removeStrike() {
 
-        let name = '#' + this.name;
-        let position = 0;
-
-        if (name == '#art')
-          position = 60;
-        else
-          position = 70;
-
         var strikeAnime = anime({
-          targets: name,
+          targets: '#' + this.name,
           width: 0,
           duration: 400,
           easing: 'easeInOutQuart'
         });
 
         // Remove coloring on the circles.
-        for (var i = 0; i < this.agents.length; ++i)
-          this.agents[i].color = '#ffffff';
+        if (!this.$parent.keepColor) {
+          for (var i = 0; i < this.agents.length; ++i) {
+            this.agents[i].color = '#ffffff';
+            this.agents[i].opacity = this.agents[i].originalOpacity;
+          }
+        }
+        else {
+          this.$parent.keepColor = false;
+        }
       }
 
 	}

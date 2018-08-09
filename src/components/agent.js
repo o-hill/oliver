@@ -23,6 +23,7 @@ var Agent = { };
     this.prevDistance = 3000;
     this.color = '#ffffff';
     this.opacity = gaussianRandom();
+    this.originalOpacity = this.opacity;
   }
 
   Agent.prototype = {

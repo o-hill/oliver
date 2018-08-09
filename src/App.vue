@@ -7,22 +7,40 @@
 </template>
 
 <script>
-export default {
-  name: 'App'
-}
+
+  export default {
+    name: 'App',
+
+    data() {
+      return {
+
+      }
+    },
+
+  }
+
 </script>
 
 <style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
 
-html {
-  background-color: #000000;
-}
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity 3s ease;
+  }
+
+  .fade-enter, .fade-leave-active {
+    opacity: 0;
+  }
+
+  #app {
+    font-family: 'Avenir', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+    color: #2c3e50;
+  }
+
+  html {
+    background-color: #000000;
+  }
+
 </style>

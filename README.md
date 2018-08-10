@@ -2,7 +2,7 @@
 
 This is the code for my personal website, which will (hopefully) be hosted at oliverhill.io at some point.
 
-The code is written entirely in javascript, using Vue.js as a framework.  I'm using a reinforcement learning library for the RL part, as well as D3.js and Tween.js to implement animations (even though I'm pretty sure I only need one of them).
+The code is written entirely in javascript, using Vue.js as a framework.  I'm using a reinforcement learning library for the RL part, as well as D3.js and Anime.js to implement animations (even though I'm pretty sure I only need one of them).
 
 # Home Page
 
